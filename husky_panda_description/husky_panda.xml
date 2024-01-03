@@ -1,0 +1,14 @@
+<mujoco model="husky_panda">
+    <include file="assets/assets.xml"/>
+    
+    <worldbody>
+        <include file="assets/basic_scene.xml" />    
+        <!-- <include file="assets/panda.urdf.xml" />     -->
+        <!-- <include file="assets/husky.urdf.xml" />     -->
+        <include file="assets/husky_panda.urdf.xml" />    
+    </worldbody>
+
+    <!-- <include file = 'assets/panda_actuator.xml' /> -->
+    <!-- <include file = 'assets/husky_actuator.xml' /> -->
+    <include file = 'assets/husky_panda_actuator.xml' />
+</mujoco>

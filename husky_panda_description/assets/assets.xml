@@ -1,0 +1,172 @@
+<mujocoinclude>
+
+    <compiler angle="radian" meshdir = "./meshes" autolimits="true">
+    </compiler>
+    <statistic meansize="0.767828" extent="17.3945" center="-1.30273 -0.281443 0.819464" />
+
+    <visual>
+        <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0"/>
+        <rgba haze="0.15 0.25 0.35 1"/>
+        <global azimuth="120" elevation="-20"/>
+    </visual>
+
+    <asset>
+        <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+        <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3"
+        markrgb="0.8 0.8 0.8" width="300" height="300"/>
+        <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+    </asset>
+
+    <!-- ============================================================== -->
+    <!-- ===================== For clearpath husky ==================== -->
+    <!-- ============================================================== -->
+    <default>
+        <default class="husky">
+            <material specular="0.5" shininess="0.25"/>
+            <joint armature="0.1" damping="1" axis="0 0 1" range="-2.8973 2.8973"/>
+            <general dyntype="none" biastype="affine" ctrlrange="-2.8973 2.8973" forcerange="-87 87"/>
+
+            <default class="husky_visual">
+                <geom type="mesh" contype="0" conaffinity="0" group="2"/>
+            </default>
+
+            <default class="husky_collision">
+                <geom type="mesh" group="3"/>
+            </default>
+        </default>
+    </default>
+
+    <asset>
+        <!-- <material class="husky" name="orange" rgba="0.996 0.941 0.412 1.0"/> -->
+        <!-- <material class="husky" name="black" rgba="0.231 0.231 0.231 1.0"/> -->
+
+        <!-- Visual meshes -->
+        <mesh name="base_link"     file="husky/base_link.stl"/>
+        <mesh name="wheel"         file="husky/wheel.stl"/>
+        <mesh name="bumper"        file="husky/bumper.stl"/>
+        <mesh name="top_chassis"   file="husky/top_chassis.stl"/>
+        <mesh name="top_structure" file="husky/roas_dyros.STL"/>
+        <mesh name="top_plate"     file="husky/top_plate.stl"/>
+        <mesh name="user_rail"     file="husky/user_rail.stl"/>
+
+    </asset>
+
+
+
+    <!-- ============================================================== -->
+    <!-- ====================== For franka panda ====================== -->
+    <!-- ============================================================== -->
+    <default>
+        <default class="panda">
+            <material specular="0.5" shininess="0.25"/>
+            <joint armature="0.1" damping="1" axis="0 0 1" range="-2.8973 2.8973"/>
+            <general dyntype="none" biastype="affine" ctrlrange="-2.8973 2.8973" forcerange="-87 87"/>
+
+            <default class="finger">
+                <joint axis="0 1 0" type="slide" range="0 0.04"/>
+            </default>
+
+            <default class="panda_visual">
+                <geom type="mesh" contype="0" conaffinity="0" group="2"/>
+            </default>
+
+            <default class="panda_collision">
+                <geom type="mesh" group="3"/>
+                <default class="fingertip_pad_collision_1">
+                    <geom type="box" size="0.0085 0.004 0.0085" pos="0 0.0055 0.0445"/>
+                </default>
+                <default class="fingertip_pad_collision_2">
+                    <geom type="box" size="0.003 0.002 0.003" pos="0.0055 0.002 0.05"/>
+                </default>
+                <default class="fingertip_pad_collision_3">
+                    <geom type="box" size="0.003 0.002 0.003" pos="-0.0055 0.002 0.05"/>
+                </default>
+                <default class="fingertip_pad_collision_4">
+                    <geom type="box" size="0.003 0.002 0.0035" pos="0.0055 0.002 0.0395"/>
+                </default>
+                <default class="fingertip_pad_collision_5">
+                    <geom type="box" size="0.003 0.002 0.0035" pos="-0.0055 0.002 0.0395"/>
+                </default>
+            </default>
+        </default>
+    </default>
+
+    <asset>
+        <material class="panda" name="white" rgba="1 1 1 1"/>
+        <material class="panda" name="off_white" rgba="0.901961 0.921569 0.929412 1"/>
+        <material class="panda" name="black" rgba="0.25 0.25 0.25 1"/>
+        <material class="panda" name="green" rgba="0 1 0 1"/>
+        <material class="panda" name="light_blue" rgba="0.039216 0.541176 0.780392 1"/>
+
+        <!-- Collision meshes -->
+        <mesh name="link0_c"  file="panda/link0.stl"/>
+        <mesh name="link1_c"  file="panda/link1.stl"/>
+        <mesh name="link2_c"  file="panda/link2.stl"/>
+        <mesh name="link3_c"  file="panda/link3.stl"/>
+        <mesh name="link4_c"  file="panda/link4.stl"/>
+        <mesh name="link5_c0" file="panda/link5_collision_0.obj"/>
+        <mesh name="link5_c1" file="panda/link5_collision_1.obj"/>
+        <mesh name="link5_c2" file="panda/link5_collision_2.obj"/>
+        <mesh name="link6_c"  file="panda/link6.stl"/>
+        <mesh name="link7_c"  file="panda/link7.stl"/>
+        <mesh name="hand_c"   file="panda/hand.stl"/>
+
+        <!-- Visual meshes -->
+        <mesh name="link0_0"  file="panda/link0_0.obj"/>
+        <mesh name="link0_1"  file="panda/link0_1.obj"/>
+        <mesh name="link0_2"  file="panda/link0_2.obj"/>
+        <mesh name="link0_3"  file="panda/link0_3.obj"/>
+        <mesh name="link0_4"  file="panda/link0_4.obj"/>
+        <mesh name="link0_5"  file="panda/link0_5.obj"/>
+        <mesh name="link0_7"  file="panda/link0_7.obj"/>
+        <mesh name="link0_8"  file="panda/link0_8.obj"/>
+        <mesh name="link0_9"  file="panda/link0_9.obj"/>
+        <mesh name="link0_10" file="panda/link0_10.obj"/>
+        <mesh name="link0_11" file="panda/link0_11.obj"/>
+        <mesh name="link1"    file="panda/link1.obj"/>
+        <mesh name="link2"    file="panda/link2.obj"/>
+        <mesh name="link3_0"  file="panda/link3_0.obj"/>
+        <mesh name="link3_1"  file="panda/link3_1.obj"/>
+        <mesh name="link3_2"  file="panda/link3_2.obj"/>
+        <mesh name="link3_3"  file="panda/link3_3.obj"/>
+        <mesh name="link4_0"  file="panda/link4_0.obj"/>
+        <mesh name="link4_1"  file="panda/link4_1.obj"/>
+        <mesh name="link4_2"  file="panda/link4_2.obj"/>
+        <mesh name="link4_3"  file="panda/link4_3.obj"/>
+        <mesh name="link5_0"  file="panda/link5_0.obj"/>
+        <mesh name="link5_1"  file="panda/link5_1.obj"/>
+        <mesh name="link5_2"  file="panda/link5_2.obj"/>
+        <mesh name="link6_0"  file="panda/link6_0.obj"/>
+        <mesh name="link6_1"  file="panda/link6_1.obj"/>
+        <mesh name="link6_2"  file="panda/link6_2.obj"/>
+        <mesh name="link6_3"  file="panda/link6_3.obj"/>
+        <mesh name="link6_4"  file="panda/link6_4.obj"/>
+        <mesh name="link6_5"  file="panda/link6_5.obj"/>
+        <mesh name="link6_6"  file="panda/link6_6.obj"/>
+        <mesh name="link6_7"  file="panda/link6_7.obj"/>
+        <mesh name="link6_8"  file="panda/link6_8.obj"/>
+        <mesh name="link6_9"  file="panda/link6_9.obj"/>
+        <mesh name="link6_10" file="panda/link6_10.obj"/>
+        <mesh name="link6_11" file="panda/link6_11.obj"/>
+        <mesh name="link6_12" file="panda/link6_12.obj"/>
+        <mesh name="link6_13" file="panda/link6_13.obj"/>
+        <mesh name="link6_14" file="panda/link6_14.obj"/>
+        <mesh name="link6_15" file="panda/link6_15.obj"/>
+        <mesh name="link6_16" file="panda/link6_16.obj"/>
+        <mesh name="link7_0"  file="panda/link7_0.obj"/>
+        <mesh name="link7_1"  file="panda/link7_1.obj"/>
+        <mesh name="link7_2"  file="panda/link7_2.obj"/>
+        <mesh name="link7_3"  file="panda/link7_3.obj"/>
+        <mesh name="link7_4"  file="panda/link7_4.obj"/>
+        <mesh name="link7_5"  file="panda/link7_5.obj"/>
+        <mesh name="link7_6"  file="panda/link7_6.obj"/>
+        <mesh name="link7_7"  file="panda/link7_7.obj"/>
+        <mesh name="hand_0"   file="panda/hand_0.obj"/>
+        <mesh name="hand_1"   file="panda/hand_1.obj"/>
+        <mesh name="hand_2"   file="panda/hand_2.obj"/>
+        <mesh name="hand_3"   file="panda/hand_3.obj"/>
+        <mesh name="hand_4"   file="panda/hand_4.obj"/>
+        <mesh name="finger_0" file="panda/finger_0.obj"/>
+        <mesh name="finger_1" file="panda/finger_1.obj"/>
+    </asset>
+</mujocoinclude>
