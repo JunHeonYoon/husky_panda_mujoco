@@ -3,8 +3,8 @@
 #include <mujoco/mujoco.h>
 #include <Eigen/Dense>
 
-#ifndef MUJOCO_UTILS_H
-#define MUJOCO_UTILS_H
+#ifndef MUJOCO_BRIDGE_H
+#define MUJOCO_BRIDGE_H
 class MujocoBridge
 {
     public:
