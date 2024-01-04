@@ -1,15 +1,15 @@
 <mujocoinclude>
 
     <actuator>
-        <!-- <velocity name="front_left_wheel"  joint="front_left_wheel"  kv="140" forcerange="-87 87" ctrlrange="-2.8973 2.8973"/>
+        <velocity name="front_left_wheel"  joint="front_left_wheel"  kv="140" forcerange="-87 87" ctrlrange="-2.8973 2.8973"/>
         <velocity name="front_right_wheel" joint="front_right_wheel" kv="140" forcerange="-87 87" ctrlrange="-2.8973 2.8973"/> 
         <velocity name="rear_left_wheel"   joint="rear_left_wheel"   kv="140" forcerange="-87 87" ctrlrange="-2.8973 2.8973"/> 
-        <velocity name="rear_right_wheel"  joint="rear_right_wheel"  kv="140" forcerange="-87 87" ctrlrange="-2.8973 2.8973"/>  -->
+        <velocity name="rear_right_wheel"  joint="rear_right_wheel"  kv="140" forcerange="-87 87" ctrlrange="-2.8973 2.8973"/> 
 
-        <motor name="front_left_wheel"  joint="front_left_wheel"  ctrlrange="-10 10"/>
+        <!-- <motor name="front_left_wheel"  joint="front_left_wheel"  ctrlrange="-10 10"/>
         <motor name="front_right_wheel" joint="front_right_wheel" ctrlrange="-10 10"/> 
         <motor name="rear_left_wheel"   joint="rear_left_wheel"   ctrlrange="-10 10"/> 
-        <motor name="rear_right_wheel"  joint="rear_right_wheel"  ctrlrange="-10 10"/> 
+        <motor name="rear_right_wheel"  joint="rear_right_wheel"  ctrlrange="-10 10"/>  -->
     </actuator>
 
 

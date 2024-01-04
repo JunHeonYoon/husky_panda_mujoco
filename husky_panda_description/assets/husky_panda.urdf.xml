@@ -11,8 +11,8 @@
             <geom class="husky_collision" size="0.4937 0.28545 0.061875" pos="0 0 0.061875" type="box"/>
             <body name="top_structure">
                 <geom class="husky_visual" pos="0 0 -0.02" type="mesh" mesh="top_structure" material="black"/>
-            <geom class="husky_collision" size="0.19496 0.28 0.65" pos="-0.2 0 0.85" type="box"/>
-                <inertial pos="-0.2 0 0.45" mass="20" fullinertia="1.95397859e-01 1.92679403e-01 1.01958752e-01 7.23330468e-08 2.01114568e-02 -7.81325404e-05" />
+                <geom class="husky_collision" size="0.19496 0.28 0.65" pos="-0.2 0 0.85" type="box"/>
+                <inertial pos="-0.2 0 0.45" mass="40" fullinertia="1.95397859e-01 1.92679403e-01 1.01958752e-01 7.23330468e-08 2.01114568e-02 -7.81325404e-05" />
             </body>
             <geom class="husky_visual" pos="-0.48 0 0.091" quat="0 0 1 0" type="mesh" mesh="bumper" rgba="0.2 0.2 0.2 1.0"/>
             <!-- <geom class="husky_visual" pos="0.48 0 0.091" type="mesh" mesh="bumper" rgba="0.2 0.2 0.2 1.0"/> -->

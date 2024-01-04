@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 
 project(husky_panda)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(OpenGL_GL_PREFERENCE LEGACY)
 
 find_package(Eigen3 REQUIRED)
@@ -19,6 +19,11 @@ include_directories(
 
 add_library(${PROJECT_NAME}_lib
   src/mujoco_bridge.cpp
+  src/glfw_adapter.cpp
+  src/glfw_dispatch.cpp
+  src/platform_ui_adapter.cpp
+  src/simulate.cpp
+  src/lodepng.cpp
 )
 
 add_executable(${PROJECT_NAME} src/main.cpp src/mujoco_bridge.cpp)
@@ -26,7 +31,7 @@ add_executable(${PROJECT_NAME} src/main.cpp src/mujoco_bridge.cpp)
 target_link_libraries(${PROJECT_NAME}
   ${PROJECT_NAME}_lib
   ${RBDL_LIBRARY}
-  # pthread
+  pthread
   glfw
   mujoco
 )

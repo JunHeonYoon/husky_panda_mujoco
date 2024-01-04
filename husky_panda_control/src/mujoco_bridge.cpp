@@ -1,127 +1,44 @@
 #include "mujoco_bridge.h"
 
-MujocoBridge::MujocoBridge()
+
+MujocoBridge::MujocoBridge(const char* filename)
 {
-    position_history_ = 0;
-    previous_time_ = 0;
-    ctrl_update_freq_ = 1000;
-    last_update_ = 0.0;
+    // print version, check compatibility
+    std::printf("MuJoCo version %s\n", mj_versionString());
+    if (mjVERSION_HEADER!=mj_version()) 
+    {
+        mju_error("Headers and library have different versions");
+    }
+
+    filename_ = filename;
+
+    // scan for libraries in the plugin directory to load additional plugins
+    scanPluginLibraries();
+
+    mjv_defaultCamera(&cam);  
+    mjv_defaultOption(&opt);
+    mjv_defaultPerturb(&pert);
+
+    sim = std::make_unique<mj::Simulate>(
+        std::make_unique<mj::GlfwAdapter>(),
+        &cam, &opt, &pert, /* is_passive = */ false);
+
 }
 
 MujocoBridge::~MujocoBridge()
 {
-    mjv_freeScene(&scn_);
-    mjr_freeContext(&con_);
-
-    mj_deleteData(MujocoBridge::d_);
-    mj_deleteModel(MujocoBridge::m_);
-
-    glfwTerminate();
+    // delete everything we allocated
+    free(ctrlnoise);
+    mj_deleteData(d);
+    mj_deleteModel(m);
 }
 
-void MujocoBridge::loadModel(const char *filename)
+
+void MujocoBridge::PhysicsThread(mj::Simulate *sim)
 {
-    char error[1000] = "Could not load binary model";
-    m_ = mj_loadXML(filename, 0 , error, 1000);
-    if(!m_) mju_error_s("Load model error: %s", error);
 
-    // make data
-    this->d_ = mj_makeData(m_);
-}
-
-void MujocoBridge::loadModel()
-{
-    char filename[] = "/home/yoonjunheon/git/husky_panda_mujoco/husky_panda_description/husky_panda.xml";
-    MujocoBridge::loadModel(filename);
-}
-
-void MujocoBridge::setCtrlFreq(const float_t hz)
-{
-    ctrl_update_freq_ = hz;
-    m_->opt.timestep = 1 / ctrl_update_freq_;
-}
-
-void MujocoBridge::init()
-{
-    if (!glfwInit()) 
-    {
-        mju_error("Could not initialize GLFW");
-    }
-    // create window, make OpenGL context current and request v-sync
-    window_ = glfwCreateWindow(1200, 900, "Husky_Panda", NULL, NULL);
-    glfwMakeContextCurrent(window_);
-
-    // initialise mujoco visualization data structures
-    mjv_defaultCamera(&cam_);
-    mjv_defaultOption(&opt_);
-    mjv_defaultScene(&scn_);
-    mjr_defaultContext(&con_);
-
-    // create scene and context
-    mjv_makeScene(m_, &scn_, 2000);
-    mjr_makeContext(m_, &con_, mjFONTSCALE_150);
-
-    // install GLFW mouse and keyboard callbacks
-    glfwSetKeyCallback(window_, MujocoBridge::keyboard);
-    glfwSetCursorPosCallback(window_, MujocoBridge::mouse_move);
-    glfwSetMouseButtonCallback(window_, MujocoBridge::mouse_button);
-    glfwSetScrollCallback(window_, MujocoBridge::scroll);
-
-    // it is just setting up the camera. Nothing else. If we even comment it out then also code works
-    // with default configuration.
-    double arr_view[] = {90, -45, 3.44, 0.0, 0.0, 0.0};
-    cam_.azimuth = arr_view[0];
-    cam_.elevation = arr_view[1];
-    cam_.distance = arr_view[2];
-    cam_.lookat[0] = arr_view[3];
-    cam_.lookat[1] = arr_view[4];
-    cam_.lookat[2] = arr_view[5];
-}
-
-void MujocoBridge::updateUtil()
-{
-    // get framebuffer viewport
-    mjrRect viewport = {0, 0, 0, 0};
-    glfwGetFramebufferSize(window_, &viewport.width, &viewport.height);
-
-    // Making camera follow the robot
-    cam_.lookat[0] = d_->qpos[0];
-    cam_.lookat[1] = d_->qpos[1];
-
-    // update scene and render
-    mjv_updateScene(m_, d_, &opt_, NULL, &cam_, mjCAT_ALL, &scn_);
-    mjr_render(viewport, &scn_, &con_);
-
-
-    // swap OpenGL buffers
-    glfwSwapBuffers(window_);
-
-    glfwPollEvents();
-}
-
-void MujocoBridge::updateState()
-{
-    mj_checkPos(m_, d_);
-    mj_checkVel(m_, d_);
-    mj_fwdPosition(m_, d_);
-    mj_sensorPos(m_, d_);
-    mj_energyPos(m_, d_);
-    mj_fwdVelocity(m_, d_);
-    mj_sensorVel(m_, d_);
-    mj_energyVel(m_, d_);
-}
-
-void MujocoBridge::updateInput()
-{
-    mj_fwdActuation(m_, d_);
-    mj_fwdAcceleration(m_, d_);
-    mj_fwdConstraint(m_, d_);
-    mj_sensorAcc(m_, d_);
-    mj_checkAcc(m_, d_);
-
-    // compare forward and inverse solutions if enabled
-    if( m_->opt.enableflags & (mjENBL_FWDINV) ) mj_compareFwdInv(m_, d_);
-    mj_RungeKutta(m_, d_, 4);
+    LoadModel(filename_);
+    PhysicsLoop(*sim);
 
 }
 
@@ -131,7 +48,7 @@ Eigen::VectorXd MujocoBridge::getQpos()
     qpos.resize(MujocoBridge::getNumq());
     for (size_t i = 0; i < qpos.size(); i++)
     {
-        qpos(i) = d_->qpos[i];
+        qpos(i) = d->qpos[i];
     }
     return qpos;
 
@@ -143,7 +60,7 @@ Eigen::VectorXd MujocoBridge::getQvel()
     qvel.resize(MujocoBridge::getNumv());
     for (size_t i = 0; i < qvel.size(); i++)
     {
-        qvel(i) = d_->qvel[i];
+        qvel(i) = d->qvel[i];
     }
     return qvel;
 }
@@ -158,72 +75,404 @@ void MujocoBridge::setCtrlInput(const Eigen::VectorXd &ctrl)
     }
     else
     {
-        for(size_t i = 0; i < ctrl.size(); i++)
+        ctrl_ = ctrl;
+    }
+}
+
+void MujocoBridge::LoadModel(const char *filename)
+{
+    // request loadmodel if file given (otherwise drag-and-drop)
+    if (filename != nullptr) 
+    {
+        std::cout<<"File name: "<<filename<<std::endl;
+        sim->LoadMessage(filename);
+        m = LoadModel(filename, *sim);
+        if (m)
         {
-            d_->ctrl[i] = ctrl[i];
+            std::cout<< "Model Loaded!"<<std::endl;
+            ctrl_.resize(getNumu());
+            ctrl_.setZero();
+            m->opt.timestep = 1 / ctrl_update_freq_;
+            d = mj_makeData(m);
+        } 
+        if (d) 
+        {
+            sim->Load(m, d, filename);
+            mj_forward(m, d);
+
+            // allocate ctrlnoise
+            free(ctrlnoise);
+            ctrlnoise = static_cast<mjtNum*>(malloc(sizeof(mjtNum)*m->nu));
+            mju_zero(ctrlnoise, m->nu);
+        } 
+        else 
+        {
+            sim->LoadMessageClear();
         }
     }
 }
 
-// keyboard callback for OpenGL
-void MujocoBridge::keyboard(GLFWwindow *window, int key, int scancode, int act, int mods)
+// return the path to the directory containing the current executable
+// used to determine the location of auto-loaded plugin libraries
+std::string MujocoBridge::getExecutableDir()
 {
-    // backspace: reset simulation
-    if (act == GLFW_PRESS && key==GLFW_KEY_BACKSPACE)
+    constexpr char kPathSep = '/';
+    const char* path = "/proc/self/exe";
+    std::string realpath = [&]() -> std::string 
     {
-        mj_resetData(m_,d_);
-        mj_forward(m_, d_);
+        std::unique_ptr<char[]> realpath(nullptr);
+        std::uint32_t buf_size = 128;
+        bool success = false;
+        while (!success) 
+        {
+            realpath.reset(new(std::nothrow) char[buf_size]);
+            if (!realpath) 
+            {
+                std::cerr << "cannot allocate memory to store executable path\n";
+                return "";
+            }
+
+            std::size_t written = readlink(path, realpath.get(), buf_size);
+            if (written < buf_size) 
+            {
+                realpath.get()[written] = '\0';
+                success = true;
+            } 
+            else if (written == -1) 
+            {
+                if (errno == EINVAL) 
+                {
+                    // path is already not a symlink, just use it
+                    return path;
+                }
+
+                std::cerr << "error while resolving executable path: " << strerror(errno) << '\n';
+                return "";
+            } 
+            else 
+            {
+                // realpath is too small, grow and retry
+                buf_size *= 2;
+            }
+        }
+        return realpath.get();
+    }();
+
+    if (realpath.empty()) 
+    {
+        return "";
     }
+
+    for (std::size_t i = realpath.size() - 1; i > 0; --i) 
+    {
+        if (realpath.c_str()[i] == kPathSep) 
+        {
+            return realpath.substr(0, i);
+        }
+    }
+
+    // don't scan through the entire file system's root
+    return "";
 }
 
-// mouse button callback
-void MujocoBridge::mouse_button(GLFWwindow *window, int button, int act, int mods)
+// scan for libraries in the plugin directory to load additional plugins
+void MujocoBridge::scanPluginLibraries()
 {
-    // update button state
-    button_left_ = (glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_LEFT)==GLFW_PRESS);
-    button_middle_ = (glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_MIDDLE)==GLFW_PRESS);
-    button_right_ = (glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_RIGHT)==GLFW_PRESS);
+    // check and print plugins that are linked directly into the executable
+    int nplugin = mjp_pluginCount();
+    if (nplugin) 
+    {
+        std::printf("Built-in plugins:\n");
+        for (int i = 0; i < nplugin; ++i)
+        {
+            std::printf("    %s\n", mjp_getPluginAtSlot(i)->name);
+        }
+    }
 
-    // update mouse position
-    glfwGetCursorPos(window, &lastx_, &lasty_);
-}
+    const std::string sep = "/";
 
-// mouse move callback
-void MujocoBridge::mouse_move(GLFWwindow *window, double xpos, double ypos)
-{
-    if(!button_left_ && !button_middle_ && !button_right_)
+    // try to open the ${EXECDIR}/plugin directory
+    // ${EXECDIR} is the directory containing the simulate binary itself
+    const std::string executable_dir = getExecutableDir();
+    if (executable_dir.empty()) 
+    {
         return;
-    
-    // compute mouse displacement
-    double dx = xpos - lastx_;
-    double dy = ypos - lasty_;
-    lastx_ = xpos;
-    lasty_ = ypos;
+    }
 
-    // get current window size
-    int width, height;
-    glfwGetWindowSize(window, &width, &height);
-
-    // get shift key state
-    bool mod_shift = (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)==GLFW_PRESS || 
-                     glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT)==GLFW_PRESS);
-    
-    // determine action based on mouse button
-    mjtMouse action;
-    if(button_right_)
-        action = mod_shift ? mjMOUSE_MOVE_H : mjMOUSE_MOVE_V;
-    else if (button_left_)
-        action = mod_shift ? mjMOUSE_ROTATE_H : mjMOUSE_ROTATE_V;
-    else
-        action = mjMOUSE_ZOOM;
-    
-    // move camera
-    mjv_moveCamera(m_, action, dx/height, dy/height, &scn_, &cam_);   
+    const std::string plugin_dir = getExecutableDir() + sep + MUJOCO_PLUGIN_DIR;
+    mj_loadAllPluginLibraries
+    (
+        plugin_dir.c_str(), +[](const char* filename, int first, int count) 
+        {
+            std::printf("Plugins registered by library '%s':\n", filename);
+            for (int i = first; i < first + count; ++i) {
+                std::printf("    %s\n", mjp_getPluginAtSlot(i)->name);
+            }
+        }
+    );
 }
 
-//scroll callback
-void MujocoBridge::scroll(GLFWwindow* window, double xoffset, double yoffset)
+mjModel* MujocoBridge::LoadModel(const char* file, mj::Simulate& sim)
 {
-    // emulate vertical mouse motion = 5% of window height
-    mjv_moveCamera(m_, mjMOUSE_ZOOM, 0, -0.05*yoffset, &scn_, &cam_);
+    // this copy is needed so that the mju::strlen call below compiles
+    char filename[mj::Simulate::kMaxFilenameLength];
+    mju::strcpy_arr(filename, file);
+
+    // make sure filename is not empty
+    if (!filename[0]) 
+    {
+        return nullptr;
+    }
+
+    // load and compile
+    char loadError[kErrorLength] = "";
+    mjModel* mnew = 0;
+    // TODO: Debug this part
+    if (mju::strlen_arr(filename)>4 &&
+        !std::strncmp(filename + mju::strlen_arr(filename) - 4, ".mjb",
+                        mju::sizeof_arr(filename) - mju::strlen_arr(filename)+4)) {
+        mnew = mj_loadModel(filename, nullptr);
+        if (!mnew) 
+        {
+            mju::strcpy_arr(loadError, "could not load binary model");
+        }
+    } else {
+        mnew = mj_loadXML(filename, nullptr, loadError, kErrorLength);
+        // remove trailing newline character from loadError
+        if (loadError[0]) {
+        int error_length = mju::strlen_arr(loadError);
+        if (loadError[error_length-1] == '\n') {
+            loadError[error_length-1] = '\0';
+        }
+        }
+    }
+
+    mju::strcpy_arr(sim.load_error, loadError);
+
+    if (!mnew) {
+        std::printf("%s\n", loadError);
+        return nullptr;
+    }
+
+    // compiler warning: print and pause
+    if (loadError[0]) {
+        // mj_forward() below will print the warning message
+        std::printf("Model compiled, but simulation warning (paused):\n  %s\n", loadError);
+        sim.run = 0;
+    }
+
+    return mnew;
+}
+
+void MujocoBridge::PhysicsLoop(mj::Simulate &sim)
+{
+  // cpu-sim syncronization point
+  std::chrono::time_point<mj::Simulate::Clock> syncCPU;
+  mjtNum syncSim = 0;
+  SuhanBenchmark timer;
+
+  // run until asked to exit
+  while (!sim.exitrequest.load()) 
+  {
+    timer.reset();
+    if (sim.droploadrequest.load()) 
+    {
+      sim.LoadMessage(sim.dropfilename);
+      mjModel* mnew = LoadModel(sim.dropfilename, sim);
+      sim.droploadrequest.store(false);
+
+      mjData* dnew = nullptr;
+      if (mnew) dnew = mj_makeData(mnew);
+      if (dnew) 
+      {
+        sim.Load(mnew, dnew, sim.dropfilename);
+
+        mj_deleteData(d);
+        mj_deleteModel(m);
+
+        m = mnew;
+        d = dnew;
+        mj_forward(m, d);
+
+        // allocate ctrlnoise
+        free(ctrlnoise);
+        ctrlnoise = (mjtNum*) malloc(sizeof(mjtNum)*m->nu);
+        mju_zero(ctrlnoise, m->nu);
+      } 
+      else 
+      {
+        sim.LoadMessageClear();
+      }
+    }
+
+    if (sim.uiloadrequest.load()) 
+    {
+      sim.uiloadrequest.fetch_sub(1);
+      sim.LoadMessage(sim.filename);
+      mjModel* mnew = LoadModel(sim.filename, sim);
+      mjData* dnew = nullptr;
+      if (mnew) dnew = mj_makeData(mnew);
+      if (dnew) 
+      {
+        sim.Load(mnew, dnew, sim.filename);
+
+        mj_deleteData(d);
+        mj_deleteModel(m);
+
+        m = mnew;
+        d = dnew;
+        mj_forward(m, d);
+
+        // allocate ctrlnoise
+        free(ctrlnoise);
+        ctrlnoise = static_cast<mjtNum*>(malloc(sizeof(mjtNum)*m->nu));
+        mju_zero(ctrlnoise, m->nu);
+      } 
+      else 
+      {
+        sim.LoadMessageClear();
+      }
+    }
+
+    // sleep for 1 ms or yield, to let main thread run
+    //  yield results in busy wait - which has better timing but kills battery life
+    if (sim.run && sim.busywait) 
+    {
+      std::this_thread::yield();
+    } 
+    else 
+    {
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+
+    {
+      // lock the sim mutex
+      const std::unique_lock<std::recursive_mutex> lock(sim.mtx);
+
+      // run only if model is present
+      if (m) 
+      {
+        // running
+        if (sim.run) 
+        {
+            bool stepped = false;
+
+            // record cpu time at start of iteration
+            const auto startCPU = mj::Simulate::Clock::now();
+
+            // elapsed CPU and simulation time since last sync
+            const auto elapsedCPU = startCPU - syncCPU;
+            double elapsedSim = d->time - syncSim;
+
+            // inject noise
+            if (sim.ctrl_noise_std) 
+            {
+                // convert rate and scale to discrete time (Ornstein–Uhlenbeck)
+                mjtNum rate = mju_exp(-m->opt.timestep / mju_max(sim.ctrl_noise_rate, mjMINVAL));
+                mjtNum scale = sim.ctrl_noise_std * mju_sqrt(1-rate*rate);
+
+            for (int i=0; i<m->nu; i++) 
+            {
+                // update noise
+                ctrlnoise[i] = rate * ctrlnoise[i] + scale * mju_standardNormal(nullptr);
+
+                // apply noise
+                d->ctrl[i] = ctrlnoise[i];
+            }
+            }
+
+            // requested slow-down factor
+            double slowdown = 100 / sim.percentRealTime[sim.real_time_index];
+
+            // misalignment condition: distance from target sim time is bigger than syncmisalign
+            bool misaligned =
+                mju_abs(Seconds(elapsedCPU).count()/slowdown - elapsedSim) > syncMisalign;
+
+            // out-of-sync (for any reason): reset sync times, step
+            if (elapsedSim < 0 || elapsedCPU.count() < 0 || syncCPU.time_since_epoch().count() == 0 ||
+                misaligned || sim.speed_changed) 
+            {
+                // re-sync
+                syncCPU = startCPU;
+                syncSim = d->time;
+                sim.speed_changed = false;
+
+                // run single step, let next iteration deal with timing
+                 // call mj_step
+                state_mutex.lock();
+                mj_step1(m, d);
+                state_mutex.unlock();
+
+                ctrl_mutex.lock();
+                for(size_t i = 0; i < ctrl_.size(); i++)
+                {
+                    d->ctrl[i] = ctrl_[i];
+                }
+                mj_step2(m, d);
+                ctrl_mutex.unlock();
+                stepped = true;
+            }
+
+            // in-sync: step until ahead of cpu
+            else 
+            {
+                bool measured = false;
+                mjtNum prevSim = d->time;
+
+                double refreshTime = simRefreshFraction/sim.refresh_rate;
+
+                // step while sim lags behind cpu and within refreshTime
+                while (Seconds((d->time - syncSim)*slowdown) < mj::Simulate::Clock::now() - syncCPU &&
+                        mj::Simulate::Clock::now() - startCPU < Seconds(refreshTime)) 
+                {
+                    // measure slowdown before first step
+                    if (!measured && elapsedSim) 
+                    {
+                        sim.measured_slowdown =
+                            std::chrono::duration<double>(elapsedCPU).count() / elapsedSim;
+                        measured = true;
+                    }
+
+                    // call mj_step
+                    state_mutex.lock();
+                    mj_step1(m, d);
+                    state_mutex.unlock();
+
+                    ctrl_mutex.lock();
+                    for(size_t i = 0; i < ctrl_.size(); i++)
+                    {
+                        d->ctrl[i] = ctrl_[i];
+                    }
+                    mj_step2(m, d);
+                    ctrl_mutex.unlock();
+                    stepped = true;
+
+                    // break if reset
+                    if (d->time < prevSim) 
+                    {
+                        break;
+                    }
+                }
+            }
+
+            // save current state to history buffer
+            if (stepped) 
+            {
+                sim.AddToHistory();
+            }
+        }
+
+        // paused
+        else 
+        {
+            // run mj_forward, to update rendering and joint sliders
+            mj_forward(m, d);
+            sim.speed_changed = true;
+        }
+      }
+    }  // release std::lock_guard<std::mutex>
+    if(!is_init_) is_init_ = true;
+//   std::cout<< "elapsed time[ms]: " << timer.elapsed()*1000 <<std::endl;
+  }
+  
 }
