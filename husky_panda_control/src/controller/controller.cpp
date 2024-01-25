@@ -117,7 +117,7 @@ void Controller::update()
 
     setControlInput();
 
-    if (DBG_CNT++ > hz_ / 1)
+    if (DBG_CNT++ > hz_ / 10)
         {
             DBG_CNT = 0;
             std::cout << "\n\n------------------------------------------------------------------" << std::endl;

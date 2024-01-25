@@ -51,7 +51,7 @@ int main(int argc, const char** argv)
         const std::chrono::milliseconds desiredPeriod(1000 / int(mb_->getSimFreq()));
         while (true)
         {
-            if(mb_->is_init_)
+            if(mb_->is_init_ && mb_->sim->run)
             {
                 auto startTime = std::chrono::high_resolution_clock::now();
                 // Getting Current state from mujoco
@@ -88,8 +88,9 @@ int main(int argc, const char** argv)
                 {
                     std::cerr << "Warning: Calculation time is longer than simulation dt!!" << std::endl;
                 }
-
             }
+            if(!control_->is_simulation_run_) mb_->sim->run = 0;
+            else mb_->sim->run = 1;
         }
     });
 
