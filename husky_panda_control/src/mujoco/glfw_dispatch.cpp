@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "glfw_dispatch.h"
+#include "mujoco/glfw_dispatch.h"
 
 #ifdef mjGLFW_DYNAMIC_SYMBOLS
   #ifdef _MSC_VER

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "simulate.h"
+#include "mujoco/simulate.h"
 
 #include <algorithm>
 #include <atomic>
@@ -27,14 +27,14 @@
 #include <utility>
 #include <iostream>
 
-#include "lodepng.h"
+#include "mujoco/lodepng.h"
 #include <mujoco/mjdata.h>
 #include <mujoco/mjui.h>
 #include <mujoco/mjvisualize.h>
 #include <mujoco/mjxmacro.h>
 #include <mujoco/mujoco.h>
-#include "platform_ui_adapter.h"
-#include "array_safety.h"
+#include "mujoco/platform_ui_adapter.h"
+#include "mujoco/array_safety.h"
 
 // When launched via an App Bundle on macOS, the working directory is the path to the App Bundle's
 // resource directory. This causes files to be saved into the bundle, which is not the desired

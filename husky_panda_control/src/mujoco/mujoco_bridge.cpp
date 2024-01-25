@@ -1,4 +1,4 @@
-#include "mujoco_bridge.h"
+#include "mujoco/mujoco_bridge.h"
 
 
 MujocoBridge::MujocoBridge(const char* filename)
@@ -65,6 +65,17 @@ Eigen::VectorXd MujocoBridge::getQvel()
     return qvel;
 }
 
+Eigen::VectorXd MujocoBridge::getQforce()
+{
+    Eigen::VectorXd u;
+    u.resize(MujocoBridge::getNumv());
+    for (size_t i = 0; i < u.size(); i++)
+    {
+        // https://mujoco.readthedocs.io/en/stable/computation/index.html
+        u(i) = d->qfrc_passive[i] + d->qfrc_actuator[i] + d->qfrc_applied[i];
+    }
+    return u;
+}
 void MujocoBridge::setCtrlInput(const Eigen::VectorXd &ctrl)
 {
     if(ctrl.size() != MujocoBridge::getNumu())
@@ -90,6 +101,7 @@ void MujocoBridge::LoadModel(const char *filename)
         if (m)
         {
             std::cout<< "Model Loaded!"<<std::endl;
+            is_model_loaded = true;
             ctrl_.resize(getNumu());
             ctrl_.setZero();
             m->opt.timestep = 1 / ctrl_update_freq_;

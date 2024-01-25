@@ -28,7 +28,7 @@
 
 #include <mujoco/mjui.h>
 #include <mujoco/mujoco.h>
-#include "platform_ui_adapter.h"
+#include "mujoco/platform_ui_adapter.h"
 
 namespace mujoco {
 

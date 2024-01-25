@@ -19,7 +19,7 @@
 
 #include <GLFW/glfw3.h>
 #include <mujoco/mujoco.h>
-#include "platform_ui_adapter.h"
+#include "mujoco/platform_ui_adapter.h"
 
 #ifdef __APPLE__
 #include <optional>

@@ -29,10 +29,10 @@
 #include <Eigen/Dense>
 
 #include <mujoco/mujoco.h>
-#include "glfw_adapter.h"
-#include "simulate.h"
-#include "array_safety.h"
-#include "suhan_benchmark.h"
+#include "mujoco/glfw_adapter.h"
+#include "mujoco/simulate.h"
+#include "mujoco/array_safety.h"
+#include "utils/suhan_benchmark.h"
 
 #define MUJOCO_PLUGIN_DIR "mujoco_plugin"
 
@@ -50,9 +50,10 @@ using Seconds = std::chrono::duration<double>;
 class MujocoBridge
 {
     public:
-        MujocoBridge(const char* filename = "/home/yoonjunheon/git/husky_panda_mujoco/husky_panda_description/husky_panda.xml");
+        MujocoBridge(const char* filename);
         ~MujocoBridge();
         void setSimFreq(const float_t hz) { ctrl_update_freq_ = hz; }
+        const float_t getSimFreq() { return ctrl_update_freq_; }
         void PhysicsThread(mj::Simulate* sim);
         double getSimTime() {return d->time; }
         int getNumq() { return m->nq; }
@@ -60,11 +61,13 @@ class MujocoBridge
         int getNumu() { return m->nu; }
         Eigen::VectorXd getQpos();
         Eigen::VectorXd getQvel();
+        Eigen::VectorXd getQforce();
         void setCtrlInput(const Eigen::VectorXd & ctrl);
 
         // simulate object encapsulates the UI
         std::unique_ptr<mujoco::Simulate> sim;
         bool is_init_ = false;
+        bool is_model_loaded = false;
 
         // thread mutex
         std::mutex state_mutex; 

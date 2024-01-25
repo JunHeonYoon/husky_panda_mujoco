@@ -18,15 +18,17 @@ include_directories(
 )
 
 add_library(${PROJECT_NAME}_lib
-  src/mujoco_bridge.cpp
-  src/glfw_adapter.cpp
-  src/glfw_dispatch.cpp
-  src/platform_ui_adapter.cpp
-  src/simulate.cpp
-  src/lodepng.cpp
+  src/mujoco/mujoco_bridge.cpp
+  src/mujoco/glfw_adapter.cpp
+  src/mujoco/glfw_dispatch.cpp
+  src/mujoco/platform_ui_adapter.cpp
+  src/mujoco/simulate.cpp
+  src/mujoco/lodepng.cpp
+  src/robot/robot_model.cpp
+  src/controller/controller.cpp
 )
 
-add_executable(${PROJECT_NAME} src/main.cpp src/mujoco_bridge.cpp)
+add_executable(${PROJECT_NAME} src/main.cpp src/mujoco/mujoco_bridge.cpp)
 
 target_link_libraries(${PROJECT_NAME}
   ${PROJECT_NAME}_lib

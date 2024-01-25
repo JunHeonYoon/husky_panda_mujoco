@@ -1,3 +1,6 @@
+#ifndef SUHAN_BENCHMARK_
+#define SUHAN_BENCHMARK_
+
 #include <iostream>
 #include <fstream>
 #include <chrono>
@@ -23,3 +26,5 @@ private:
   typedef std::chrono::duration<double, std::ratio<1> > second;
   std::chrono::time_point<hd_clock> beg_;
 };
+
+#endif
