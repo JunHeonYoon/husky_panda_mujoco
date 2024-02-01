@@ -9,7 +9,7 @@
 
 int main(int argc, const char** argv)
 {
-    robot::RobotType robot_type = robot::RobotType::Manipulator;
+    robot::RobotType robot_type = robot::RobotType::MobileManipulator;
     const float_t sim_hz = 1000; 
 
     std::shared_ptr<MujocoBridge> mb_;

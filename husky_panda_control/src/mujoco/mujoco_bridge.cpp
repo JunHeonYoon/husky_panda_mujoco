@@ -67,15 +67,16 @@ Eigen::VectorXd MujocoBridge::getQvel()
 
 Eigen::VectorXd MujocoBridge::getQforce()
 {
-    Eigen::VectorXd u;
-    u.resize(MujocoBridge::getNumv());
-    for (size_t i = 0; i < u.size(); i++)
+    Eigen::VectorXd tau;
+    tau.resize(MujocoBridge::getNumv());
+    for (size_t i = 0; i < tau.size(); i++)
     {
         // https://mujoco.readthedocs.io/en/stable/computation/index.html
-        u(i) = d->qfrc_passive[i] + d->qfrc_actuator[i] + d->qfrc_applied[i];
+        tau(i) = d->qfrc_passive[i] + d->qfrc_actuator[i] + d->qfrc_applied[i];
     }
-    return u;
+    return tau;
 }
+
 void MujocoBridge::setCtrlInput(const Eigen::VectorXd &ctrl)
 {
     if(ctrl.size() != MujocoBridge::getNumu())

@@ -127,7 +127,7 @@ class Controller
         VectorXd tau_desired_;
 
         MatrixXd m_;
-        VectorXd g_;
+        VectorXd nle_;
 
         // for mobile manipulator
         VectorXd v_;   // joint velocity
@@ -138,7 +138,7 @@ class Controller
         VectorXd qv_desired_;  // joint position
         MatrixXd jv_;  // jacobian in joint velocity space
         MatrixXd mv_;  // Mass matrix in joint velocity space
-        VectorXd gv_;  // Gravity torque in joint velocity space
+        VectorXd nlev_;  // Nonlinear Effect torque in joint velocity space
 
 
         

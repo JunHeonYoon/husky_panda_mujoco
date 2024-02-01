@@ -12,24 +12,24 @@ class DataContainer
         {
             q_.resize(nq);
             v_.resize(nv);
-            u_.resize(nu);
+            tau_.resize(nv);
             u_desired_.resize(nu);
             q_.setZero();
             v_.setZero();
-            u_.setZero();
+            tau_.setZero();
             u_desired_.setZero();
         }
-        void getCurrentState(Eigen::VectorXd &q, Eigen::VectorXd &v,Eigen::VectorXd &u)
+        void getCurrentState(Eigen::VectorXd &q, Eigen::VectorXd &v,Eigen::VectorXd &tau)
         {
             q = q_; 
             v = v_;
-            u = u_;
+            tau = tau_;
         }
-        void setCurrentState(const Eigen::VectorXd &q, const Eigen::VectorXd &v, const Eigen::VectorXd &u)
+        void setCurrentState(const Eigen::VectorXd &q, const Eigen::VectorXd &v, const Eigen::VectorXd &tau)
         {
             q_ = q; 
             v_ = v; 
-            u_ = u; 
+            tau_ = tau; 
         }
         void getDesiredState(Eigen::VectorXd &u_desired)
         {
@@ -46,7 +46,7 @@ class DataContainer
             // current state
             Eigen::VectorXd q_;
             Eigen::VectorXd v_;
-            Eigen::VectorXd u_;
+            Eigen::VectorXd tau_;
 
             // control input
             Eigen::VectorXd u_desired_;

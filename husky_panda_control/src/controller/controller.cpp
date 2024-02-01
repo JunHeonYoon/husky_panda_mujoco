@@ -30,7 +30,7 @@ bool Controller::init()
     tau_.resize(nu);
     tau_desired_.resize(nu);
     m_.resize(nq, nq);
-    g_.resize(nq);
+    nle_.resize(nq);
     v_.resize(nv);
     qv_.resize(nv);
     v_init_.resize(nv);
@@ -39,7 +39,7 @@ bool Controller::init()
     qv_desired_.resize(nv);
     jv_.resize(ee_dof, nv);
     mv_.resize(nv, nv);
-    gv_.resize(nv);
+    nlev_.resize(nv);
 
     q_.setZero();
     qdot_.setZero();
@@ -51,7 +51,7 @@ bool Controller::init()
     tau_.setZero();
     tau_desired_.setZero();
     m_.setZero();
-    g_.setZero();
+    nle_.setZero();
     v_.setZero();
     qv_.setZero();
     v_init_.setZero();
@@ -60,7 +60,7 @@ bool Controller::init()
     qv_desired_.setZero();
     jv_.setZero();
     mv_.setZero();
-    gv_.setZero();
+    nlev_.setZero();
 
 
     tick_ = 0;
@@ -86,14 +86,14 @@ void Controller::update()
     ee_pose_ = robot_->getTransformation(panda_num_links);
     j_ = robot_->getJacobian(panda_num_links);
     m_ = robot_->getMassMatrix(); 
-    g_ = robot_->getGravity();
+    nle_ = robot_->getNonlinearEffect();
     if(robot_->robot_type_ == robot::MobileManipulator)
     {
         v_ = qdot_.segment(3, v_.size()); // except x, y, theta
         qv_ = q_.segment(3, v_.size());   // except x, y, theta
         jv_ = robot_->getvJacobian(panda_num_links);
         mv_ = robot_->getvMassMatrix();
-        gv_ = robot_->getvGravity();
+        nlev_ = robot_->getvNonlinearEffect();
     }
     input_mutex_.unlock();
 
@@ -140,8 +140,8 @@ void Controller::update()
             // std::cout << std::fixed << std::setprecision(3) << j_ << std::endl;
             // std::cout << "M        :\t" << std::endl;
             // std::cout << std::fixed << std::setprecision(3) << m_ << std::endl;
-            // std::cout << "G        :\t" << std::endl;
-            // std::cout << std::fixed << std::setprecision(3) << g_.transpose() << std::endl;
+            // std::cout << "NLE      :\t" << std::endl;
+            // std::cout << std::fixed << std::setprecision(3) << nle_.transpose() << std::endl;
             std::cout << "------------------------------------------------------------------\n\n" << std::endl;
         }
 
@@ -156,44 +156,44 @@ void Controller::stopping()
 
 void Controller::getCurrentState()
 {
-    Eigen::VectorXd mj_q, mj_v, mj_u;
-    robot_data_->getCurrentState(mj_q, mj_v, mj_u);
+    Eigen::VectorXd mj_q, mj_v, mj_tau;
+    robot_data_->getCurrentState(mj_q, mj_v, mj_tau);
     // Because state, joint velocity, control input dimension
     // are different with mujoco data, we have to modify the data
     // w.r.t our controller data
     if(robot_->robot_type_ == robot::Manipulator)
     {
         // ------------------ mujoco -----------------
-        // nq = 9 -> joint1~7, left/right finger
-        // nv = 9 -> joint1~7, left/right finger
+        // nq = 9 -> joint1~7, left/right finger  : mj_q
+        // nv = 9 -> joint1~7, left/right finger  : mj_v, mj_tau
         // nu = 8 -> joint1~7, finger(constrained)
         // ---------------- controller ----------------
         // TODO: add finger joint
-        // nq = 7 -> joint1~7 
-        // nv = 7 -> joint1~7 
-        // nu = 7 -> joint1~7 
+        // nq = 7 -> joint1~7 : q_, q_dot_
+        // nv = 7 -> joint1~7 : v_
+        // nu = 7 -> joint1~7 : tau_
         // --------------------------------------------
         q_ = mj_q.head(panda_dof);
         qdot_ = mj_v.head(panda_dof);
-        tau_ = mj_u.head(panda_dof);
+        tau_ = mj_tau.head(panda_dof);
 
     }
     else if(robot_->robot_type_ == robot::MobileManipulator)
     {
         // ------------------ mujoco -----------------
-        // nq = 20 -> floating base(trans, quaternion), 4 wheels, joint1~7, left/right finger
-        // nv = 19 -> floating base(trans, rotation), 4 wheels, joint1~7, left/right finger
+        // nq = 20 -> floating base(trans, quaternion), 4 wheels, joint1~7, left/right finger : mj_q
+        // nv = 19 -> floating base(trans, rotation), 4 wheels, joint1~7, left/right finger   : mj_v, mj_tau
         // nu = 12 -> 4 wheels, joint1~7, finger(constrained)
         // ---------------- controller ----------------
         // TODO: add finger joint
-        // nq = 12 -> floating base(x, y, theta), 2 wheels, joint1~7
-        // nv = 9  -> 2 wheels, joint1~7
-        // nu = 9  -> 2 wheels, joint1~7
+        // nq = 12 -> floating base(x, y, theta), 2 wheels, joint1~7 : q_, q_dot_
+        // nv = 9  -> 2 wheels, joint1~7                             : v_
+        // nu = 9  -> 2 wheels, joint1~7                             : tau_
         // --------------------------------------------
         double theta = DyrosMath::quaternionToYaw(mj_q.segment(3, 4));
-        q_ << mj_q.head(2), theta, mj_q(7), mj_q(8), mj_q.segment(11, 7);
-        qdot_ << mj_v.head(2), mj_v(5), mj_v(7), mj_v(8), mj_v.segment(10, 7);
-        tau_ << mj_u.head(2), mj_u.segment(4, 7);
+        q_ << mj_q.head(2), theta, mj_q(7), mj_q(8), mj_q.segment(11, panda_dof);
+        qdot_ << mj_v.head(2), mj_v(5), mj_v(7), mj_v(8), mj_v.segment(10, panda_dof);
+        tau_ << mj_tau.segment(6, 2), mj_tau.segment(10, panda_dof);
     }
 }
 
@@ -206,14 +206,10 @@ void Controller::setControlInput()
     if(robot_->robot_type_ == robot::Manipulator)
     {
         // ------------------ mujoco -----------------
-        // nq = 9 -> joint1~7, left/right finger
-        // nv = 9 -> joint1~7, left/right finger
-        // nu = 8 -> joint1~7, finger(constrained)
+        // nu = 8 -> joint1~7, finger(constrained) : mj_u_desired (torque for joint, position for gripper)
         // ---------------- controller ----------------
         // TODO: add finger joint
-        // nq = 7 -> joint1~7 
-        // nv = 7 -> joint1~7 
-        // nu = 7 -> joint1~7 
+        // nu = 7 -> joint1~7 : tau_desired_ (torque for joint)
         // --------------------------------------------
         mj_u_desired.resize(panda_dof + 1);
         mj_u_desired.setZero();
@@ -223,19 +219,17 @@ void Controller::setControlInput()
     else if(robot_->robot_type_ == robot::MobileManipulator)
     {
         // ------------------ mujoco -----------------
-        // nq = 20 -> floating base(trans, quaternion), 4 wheels, joint1~7, left/right finger
-        // nv = 19 -> floating base(trans, rotation), 4 wheels, joint1~7, left/right finger
-        // nu = 12 -> 4 wheels, joint1~7, finger(constrained)
+        // nu = 12 -> 4 wheels, joint1~7, finger(constrained) : mj_u_desired (velocity for wheels
+        //                                                                    torque for joint, position for gripper)
         // ---------------- controller ----------------
         // TODO: add finger joint
-        // nq = 12 -> floating base(x, y, theta), 2 wheels, joint1~7
-        // nv = 9  -> 2 wheels, joint1~7
-        // nu = 9  -> 2 wheels, joint1~7
+        // TODO: add control input of mobile
+        // nu = 9  -> 2 wheels, joint1~7 : tau_desired_ (torque for wheels, torque for joint)
         // --------------------------------------------
         mj_u_desired.resize(panda_dof + 5);
         mj_u_desired.setZero();
+        // mj_u_desired.head(4) << 1, -1, 1, -1;
         mj_u_desired.segment(4, panda_dof) = tau_desired_.segment(2, panda_dof);
-        // TODO: control input of mobile
     }
     robot_data_ ->setDesiredState(mj_u_desired);
 }
@@ -250,11 +244,11 @@ VectorXd Controller::PDControl(VectorXd q_desired, VectorXd qdot_desired)
 
     if(robot_->robot_type_ == robot::Manipulator)
     {
-        tau_desired = m_ * ( kp*(q_desired - q_) + kv*(qdot_desired - qdot_)) + g_;
+        tau_desired = m_ * ( kp*(q_desired - q_) + kv*(qdot_desired - qdot_)) + nle_;
     }
     else if(robot_->robot_type_ == robot::MobileManipulator)
     {
-        tau_desired = mv_ * ( kp*(q_desired - qv_) + kv*(qdot_desired - v_)) + gv_;
+        tau_desired = mv_ * ( kp*(q_desired - qv_) + kv*(qdot_desired - v_)) + nlev_;
     }
 
     return tau_desired;
@@ -344,7 +338,7 @@ void Controller::asyncCalculationProc()
     }
     else
     {
-        tau_desired_.tail(panda_dof) = g_.tail(panda_dof);
+        tau_desired_.tail(panda_dof) = nle_.tail(panda_dof);
     }
 
     calculation_mutex_.unlock();

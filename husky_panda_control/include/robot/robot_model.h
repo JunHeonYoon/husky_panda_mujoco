@@ -63,10 +63,10 @@ namespace robot
 				MassMatrix();
 				return m_;
 			}
-			const VectorXd & getGravity()
+			const VectorXd & getNonlinearEffect()
 			{
-				Gravity();
-				return g_;
+				NonlinearEffect();
+				return nle_;
 			}
             const MatrixXd & getSelectionMatrix()
             {
@@ -83,10 +83,10 @@ namespace robot
 				MassMatrix();
 				return mv_;
 			}
-			const VectorXd & getvGravity()
+			const VectorXd & getvNonlinearEffect()
 			{
-				Gravity();
-				return gv_;
+				NonlinearEffect();
+				return nlev_;
 			}
 
             RobotType robot_type_;
@@ -100,9 +100,9 @@ namespace robot
 			void Orientation(const int & frame_id);
 			void Transformation(const int & frame_id);
 			void MassMatrix();
-			void Gravity();
+			void NonlinearEffect();
 
-            std::shared_ptr<RigidBodyDynamics::Model> model_;
+            std::shared_ptr<Model> model_;
             unsigned int base_id_;     // for mobile base
             unsigned int body_id_[panda_num_links];  // only for manipulator (link0~7, hand)
             // Vector3d link_position_[panda_num_links]; // only for manipulator (link0~7, hand)
@@ -124,16 +124,17 @@ namespace robot
             // Dynamics
             MatrixXd m_;         // Mass matrix
             MatrixXd m_inverse_; // Inverse of mass matrix
-            VectorXd g_;         // Gravity torque
+            VectorXd nle_;       // Nonlinear Effect (Gravity torque + Coriolis torque)
 
             // mobile manipulator
-            MatrixXd selection_; // Selection matrix that mapping joint velocity(v) to general coordinate(qdot)
-            MatrixXd jv_;        // jacobian in joint velocity space
+            VectorXd v_rbdl_;       // joint velocity
+            MatrixXd selection_;    // Selection matrix that mapping joint velocity(v) to general coordinate(qdot)
+            MatrixXd selection_dot_; 
+            MatrixXd jv_;           // jacobian in joint velocity space
             MatrixXd jv_v_;       
             MatrixXd jv_w_;
-            MatrixXd mv_;         // Mass matrix in joint velocity space
-            VectorXd gv_;         // Gravity torque in joint velocity space
-
+            MatrixXd mv_;           // Mass matrix in joint velocity space
+            VectorXd nlev_;         // Nonlinear Effect (Gravity torque + Coriolis torque) in joint velocity space
 
 
 

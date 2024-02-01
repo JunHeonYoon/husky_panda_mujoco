@@ -35,29 +35,32 @@ robot::RobotModel::RobotModel(RobotType robot_type)
 	j_v_.setZero();
 	j_w_.setZero();
 
-	g_.resize(nq_);
+	nle_.resize(nq_);
 	m_.resize(nq_, nq_);
 	m_inverse_.resize(nq_, nq_);
-	g_.setZero();
+	nle_.setZero();
 	m_.setZero();
 	m_inverse_.setZero();
 
 	if(robot_type == MobileManipulator)
 	{
+		v_rbdl_.resize(nv_);
 		selection_.resize(nq_, nv_);
+		selection_dot_.resize(nq_, nv_);
 		jv_.resize(ee_dof, nv_);
 		jv_v_.resize(int(ee_dof/2), nv_);
 		jv_w_.resize(int(ee_dof/2), nv_);
 		mv_.resize(nv_, nv_);
-		gv_.resize(nv_);
+		nlev_.resize(nv_);
 
-
+		v_rbdl_.setZero();
 		selection_.setZero();
+		selection_dot_.setZero();
 		jv_.setZero();
 		jv_v_.setZero();
 		jv_w_.setZero();
 		mv_.setZero();
-		gv_.setZero();
+		nlev_.setZero();
 	}
    
    setRobot();
@@ -82,7 +85,7 @@ void robot::RobotModel::setRobot()
 	else if(robot_type_ == MobileManipulator)
 	{
 		setHusky();
-		setPanda(base_id_, Vector3d(0.3, 0, 0.256), Matrix3d::Identity());
+		setPanda(base_id_, Vector3d(0.3, 0, 0), Matrix3d::Identity());
 	}
 }
 
@@ -409,9 +412,9 @@ void robot::RobotModel::Transformation(const int &frame_id)
 
 void robot::RobotModel::MassMatrix()
 {
-	Eigen::MatrixXd m_virtual(nq_, nq_);
+	MatrixXd m_virtual(nq_, nq_);
 	m_virtual.setZero();
-	RigidBodyDynamics::CompositeRigidBodyAlgorithm(*model_, q_rbdl_, m_virtual, true);
+	CompositeRigidBodyAlgorithm(*model_, q_rbdl_, m_virtual, true);
 	m_ = m_virtual;
 	if(robot_type_ == MobileManipulator)
 	{
@@ -420,31 +423,38 @@ void robot::RobotModel::MassMatrix()
 
 }
 
-void robot::RobotModel::Gravity()
+void robot::RobotModel::NonlinearEffect()
 {
-	Eigen::VectorXd g_virtual(nq_);
-	g_virtual.setZero();
-	RigidBodyDynamics::NonlinearEffects(*model_, q_rbdl_, qdot_rbdl_, g_virtual);
-	g_ = g_virtual;
+	VectorXd nle_virtual(nq_);
+	nle_virtual.setZero();
+	MassMatrix();
+	NonlinearEffects(*model_, q_rbdl_, qdot_rbdl_, nle_virtual);
+	nle_ = nle_virtual;
 	if(robot_type_ == MobileManipulator)
 	{
-		gv_ = selection_.transpose() * g_;
+		nlev_ = selection_.transpose() * nle_ + selection_.transpose() * m_ * selection_dot_ * v_rbdl_;
 	}
 }
 
-void robot::RobotModel::getUpdateKinematics(const Eigen::VectorXd &q, const Eigen::VectorXd &qdot)
+void robot::RobotModel::getUpdateKinematics(const VectorXd &q, const VectorXd &qdot)
 {
 	q_rbdl_ = q;
 	qdot_rbdl_ = qdot;
-	RigidBodyDynamics::UpdateKinematicsCustom(*model_, &q_rbdl_, &qdot_rbdl_, NULL);
+	UpdateKinematicsCustom(*model_, &q_rbdl_, &qdot_rbdl_, NULL);
 	if(robot_type_ == MobileManipulator)
 	{
-		double r = 0.165, L = 1.0;
+		v_rbdl_ = q_rbdl_.tail(nv_);
+		double r = 0.165, L = 0.5, d = 0.3, c = r / (2.0 * L);
 		selection_.block(5, 2, panda_dof, panda_dof) = MatrixXd::Identity(panda_dof, panda_dof);
-		selection_.block(0,  0, 5, 2) << r*cos(qdot_rbdl_(2)) / 2, r*cos(qdot_rbdl_(2)) / 2,
-										 r*sin(qdot_rbdl_(2)) / 2, r*sin(qdot_rbdl_(2)) / 2,
-										 r / L,                    -r / L,
-										 0,                        1,
-										 1,                        0;
+		selection_.block(0,  0, 5, 2) << c * (L*cos(q_rbdl_(2)) + d*sin(q_rbdl_(2))), c * (L*cos(q_rbdl_(2)) - d*sin(q_rbdl_(2))),
+										 c * (L*sin(q_rbdl_(2)) - d*cos(q_rbdl_(2))), c * (L*sin(q_rbdl_(2)) + d*cos(q_rbdl_(2))),
+										 -c,                                                c,
+										 1,                                                 0,
+										 0,                                                 1;
+
+
+		selection_dot_.block(0,  0, 2, 2) << c * (-L*sin(q_rbdl_(2)) + d*cos(q_rbdl_(2))), c * (-L*sin(q_rbdl_(2)) - d*cos(q_rbdl_(2))),
+										     c * ( L*cos(q_rbdl_(2)) + d*sin(q_rbdl_(2))), c * ( L*cos(q_rbdl_(2)) - d*sin(q_rbdl_(2)));
+		selection_dot_ *= qdot_rbdl_(2);
 	}
 }

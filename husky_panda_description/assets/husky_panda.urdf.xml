@@ -21,13 +21,6 @@
             <geom class="husky_visual" pos="0 0 0" type="mesh" mesh="top_chassis" rgba="0.8 0.8 0.0 1.0"/>
             <site name="husky_site"  size = "0.005" rgba = ".1 .1 .9 1" type = "sphere" />
 
-            <body name="front_right_wheel" pos="0.256 -0.2854 0.03282">
-                <inertial pos="0 0 0" quat="0.707107 0 0 0.707107" mass="2.637" diaginertia="0.04411 0.02467 0.02467"/>
-                <joint name="front_right_wheel" type="hinge" pos="0 0 0" axis="0 1 0"/>
-                <geom class="husky_visual" pos="0 0 0" quat="0 0 0 1" mesh="wheel" material="black"/>
-                <geom class="husky_collision" size="0.1651 0.05715" quat="0.707107 0.707106 0 0" type="cylinder"/>
-            </body>
-
             <body name="front_left_wheel" pos="0.256 0.2854 0.03282">
                 <inertial pos="0 0 0" quat="0.707107 0 0 0.707107" mass="2.637" diaginertia="0.04411 0.02467 0.02467"/>
                 <joint name="front_left_wheel" type="hinge" pos="0 0 0" axis="0 1 0"/>
@@ -35,9 +28,9 @@
                 <geom class="husky_collision" size="0.1651 0.05715" quat="0.707107 0.707106 0 0" type="cylinder"/>
             </body>
 
-            <body name="rear_right_wheel" pos="-0.256 -0.2854 0.03282">
+            <body name="front_right_wheel" pos="0.256 -0.2854 0.03282">
                 <inertial pos="0 0 0" quat="0.707107 0 0 0.707107" mass="2.637" diaginertia="0.04411 0.02467 0.02467"/>
-                <joint name="rear_right_wheel" type="hinge" pos="0 0 0" axis="0 1 0" />
+                <joint name="front_right_wheel" type="hinge" pos="0 0 0" axis="0 1 0"/>
                 <geom class="husky_visual" pos="0 0 0" quat="0 0 0 1" mesh="wheel" material="black"/>
                 <geom class="husky_collision" size="0.1651 0.05715" quat="0.707107 0.707106 0 0" type="cylinder"/>
             </body>
@@ -48,6 +41,14 @@
                 <geom class="husky_visual" pos="0 0 0" quat="0 0 0 1" mesh="wheel" material="black"/>
                 <geom class="husky_collision" size="0.1651 0.05715" quat="0.707107 0.707106 0 0" type="cylinder"/>
             </body>
+            
+            <body name="rear_right_wheel" pos="-0.256 -0.2854 0.03282">
+                <inertial pos="0 0 0" quat="0.707107 0 0 0.707107" mass="2.637" diaginertia="0.04411 0.02467 0.02467"/>
+                <joint name="rear_right_wheel" type="hinge" pos="0 0 0" axis="0 1 0" />
+                <geom class="husky_visual" pos="0 0 0" quat="0 0 0 1" mesh="wheel" material="black"/>
+                <geom class="husky_collision" size="0.1651 0.05715" quat="0.707107 0.707106 0 0" type="cylinder"/>
+            </body>
+
 
             <!-- ============================================================== -->
             <!-- ====================== For franka panda ====================== -->
